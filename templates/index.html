@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+
+<html lang="es" class="scroll-smooth">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Nmap + Ollama Dashboard | Auditor de Ciberseguridad</title>
+
+ 
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+ 
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+ 
+
+  <script>
+
+    tailwind.config = {
+
+      theme: {
+
+        extend: {
+
+          colors: {
+
+            primary: '#22c55e',
+
+            dark: {
+
+              50: '#f8fafc',
+
+              100: '#f1f5f9',
+
+              200: '#e2e8f0',
+
+              300: '#cbd5e1',
+
+              400: '#94a3b8',
+
+              500: '#64748b',
+
+              600: '#475569',
+
+              700: '#334155',
+
+              800: '#1e293b',
+
+              900: '#0f172a',
+
+              950: '#020617'
+
+            }
+
+          },
+
+          animation: {
+
+            'fade-in': 'fadeIn 0.5s ease-in-out',
+
+            'slide-up': 'slideUp 0.5s ease-out',
+
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+
+          },
+
+          keyframes: {
+
+            fadeIn: {
+
+              '0%': { opacity: '0' },
+
+              '100%': { opacity: '1' },
+
+            },
+
+            slideUp: {
+
+              '0%': { transform: 'translateY(20px)', opacity: '0' },
+
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+
+            }
+
+          }
+
+        }
+
+      }
+
+    }
+
+  </script>
+
+ 
+
+  <style>
+
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+   
+
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+    .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+   
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+
+    ::-webkit-scrollbar-track { background: #0f172a; }
+
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+
+
+    @keyframes gradient {
+
+      0% { background-position: 0% 50%; }
+
+      50% { background-position: 100% 50%; }
+
+      100% { background-position: 0% 50%; }
+
+    }
+
+   
+
+    .gradient-animate {
+
+      background-size: 200% 200%;
+
+      animation: gradient 8s ease infinite;
+
+    }
+
+  </style>
+
+</head>
+
+
+
+<body class="bg-dark-950 text-gray-100 min-h-screen">
+
+ 
+
+  <header class="relative overflow-hidden border-b border-dark-800">
+
+    <div class="absolute inset-0 bg-gradient-to-br from-primary/10 via-dark-950 to-dark-950 gradient-animate"></div>
+
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+      <div class="flex items-center gap-4 mb-3">
+
+        <div class="p-3 bg-primary/10 rounded-xl border border-primary/20">
+
+          <i data-lucide="shield-check" class="w-8 h-8 text-primary"></i>
+
+        </div>
+
+        <div>
+
+          <h1 class="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+
+            Nmap + Ollama Dashboard
+
+          </h1>
+
+          <p class="text-gray-400 text-sm sm:text-base mt-1">
+
+            Escaneos locales asíncronos con análisis de <span class="text-primary font-semibold">Ciberseguridad IA</span>
+
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+   
+
+    <section class="bg-dark-900 border border-dark-800 rounded-2xl p-6 shadow-xl animate-fade-in">
+
+      <div class="flex items-center gap-3 mb-6">
+
+        <i data-lucide="scan" class="w-6 h-6 text-primary"></i>
+
+        <h2 class="text-2xl font-bold">Nuevo escaneo</h2>
+
+      </div>
+
+     
+
+      <form id="scan-form" onsubmit="startScan(event)" class="space-y-6">
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+          <div class="md:col-span-2">
+
+            <label for="target" class="block text-sm font-medium text-gray-300 mb-2">
+
+              <i data-lucide="target" class="w-4 h-4 inline mr-1"></i>
+
+              IP / Host / Rango
+
+            </label>
+
+            <input
+
+              type="text"
+
+              id="target"
+
+              name="target"
+
+              placeholder="192.168.1.10 o scanme.nmap.org"
+
+              required
+
+              class="w-full px-4 py-3 bg-dark-950 border border-dark-700 rounded-xl text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+
+            >
+
+          </div>
+
+         
+
+          <div>
+
+            <label for="profile" class="block text-sm font-medium text-gray-300 mb-2">
+
+              <i data-lucide="zap" class="w-4 h-4 inline mr-1"></i>
+
+              Perfil de escaneo
+
+            </label>
+
+            <select
+
+              id="profile"
+
+              name="profile"
+
+              class="w-full px-4 py-3 bg-dark-950 border border-dark-700 rounded-xl text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+
+            >
+
+              <option value="quick">⚡ Rápido (top 100 puertos)</option>
+
+              <option value="full">🔍 Completo (todos los puertos)</option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+
+
+        <div class="bg-dark-950 border border-dark-800 rounded-xl p-4">
+
+          <label class="block text-sm font-medium text-gray-300 mb-3">
+
+            <i data-lucide="settings" class="w-4 h-4 inline mr-1"></i>
+
+            Opciones avanzadas Nmap
+
+          </label>
+
+          <div class="flex flex-wrap gap-3">
+
+            <label class="inline-flex items-center gap-2 px-4 py-2 bg-dark-950 border border-dark-700 rounded-lg cursor-pointer hover:border-primary/50 transition-all">
+
+              <input type="checkbox" id="no_ping" class="w-4 h-4 text-primary bg-dark-950 border-dark-600 rounded focus:ring-primary focus:ring-2">
+
+              <span class="text-sm font-mono">-Pn</span>
+
+              <span class="text-xs text-gray-400">(No ping)</span>
+
+            </label>
+
+           
+
+            <label class="inline-flex items-center gap-2 px-4 py-2 bg-dark-950 border border-dark-700 rounded-lg cursor-pointer hover:border-primary/50 transition-all">
+
+              <input type="checkbox" id="os_detect" class="w-4 h-4 text-primary bg-dark-950 border-dark-600 rounded focus:ring-primary focus:ring-2">
+
+              <span class="text-sm font-mono">-O</span>
+
+              <span class="text-xs text-gray-400">(Detección de SO)</span>
+
+            </label>
+
+           
+
+            <label class="inline-flex items-center gap-2 px-4 py-2 bg-dark-950 border border-dark-700 rounded-lg cursor-pointer hover:border-primary/50 transition-all">
+
+              <input type="checkbox" id="vuln_scripts" class="w-4 h-4 text-primary bg-dark-950 border-dark-600 rounded focus:ring-primary focus:ring-2">
+
+              <span class="text-sm font-mono">--script vuln</span>
+
+              <span class="text-xs text-gray-400">(Vulnerabilidades)</span>
+
+            </label>
+
+          </div>
+
+        </div>
+
+
+
+        <div class="flex items-center justify-between">
+
+          <p class="text-xs text-gray-500 flex items-start gap-2 max-w-2xl">
+
+            <i data-lucide="alert-circle" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+
+            <span>Usa esto solo en entornos autorizados. Escaneo local.</span>
+
+          </p>
+
+          <button
+
+            id="btn-scan"
+
+            type="submit"
+
+            class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-emerald-400 hover:from-primary/90 hover:to-emerald-400/90 text-dark-950 font-semibold rounded-xl shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+
+          >
+
+            <i data-lucide="play" class="w-5 h-5"></i>
+
+            Ejecutar Escaneo
+
+          </button>
+
+        </div>
+
+      </form>
+
+    </section>
+
+
+
+    <section id="progress-section" class="hidden bg-dark-900 border border-dark-800 rounded-2xl p-6 shadow-xl animate-slide-up">
+
+        <div class="flex items-center justify-between mb-2">
+
+            <div class="flex items-center gap-2">
+
+                <div class="relative flex h-3 w-3">
+
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+
+                </div>
+
+                <h3 id="progress-status" class="text-lg font-semibold text-gray-200">Iniciando...</h3>
+
+            </div>
+
+            <span id="progress-percent" class="text-2xl font-bold text-primary">0%</span>
+
+        </div>
+
+       
+
+        <div class="w-full bg-dark-950 rounded-full h-4 border border-dark-700 overflow-hidden">
+
+            <div id="progress-bar" class="bg-gradient-to-r from-primary to-emerald-400 h-4 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+
+        </div>
+
+        <p class="text-xs text-gray-500 mt-2">No cierres esta ventana mientras el proceso está activo.</p>
+
+    </section>
+
+
+
+    <section id="error-section" class="hidden bg-red-950/30 border border-red-800/50 rounded-2xl p-6 shadow-xl animate-slide-up">
+
+        <div class="flex items-start gap-3">
+
+          <i data-lucide="alert-triangle" class="w-6 h-6 text-red-400 flex-shrink-0 mt-1"></i>
+
+          <div class="flex-1">
+
+            <h2 class="text-xl font-bold text-red-400 mb-2">Error</h2>
+
+            <pre id="error-message" class="text-sm text-red-300 font-mono bg-red-950/50 p-4 rounded-lg overflow-x-auto"></pre>
+
+          </div>
+
+        </div>
+
+    </section>
+
+
+
+    <section class="bg-dark-900 border border-dark-800 rounded-2xl p-6 shadow-xl animate-fade-in">
+
+      <div class="flex items-center gap-3 mb-6">
+
+        <i data-lucide="upload" class="w-6 h-6 text-blue-400"></i>
+
+        <h2 class="text-2xl font-bold">Importar análisis guardado</h2>
+
+      </div>
+
+     
+
+      <form method="post" action="/import" enctype="multipart/form-data" class="space-y-4">
+
+        <div>
+
+          <label for="file" class="block text-sm font-medium text-gray-300 mb-2">
+
+            <i data-lucide="file-json" class="w-4 h-4 inline mr-1"></i>
+
+            Archivo JSON de reporte
+
+          </label>
+
+          <input type="file" id="file" name="file" accept=".json,application/json" required
+
+            class="block w-full text-sm text-gray-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 file:cursor-pointer cursor-pointer border border-dark-700 rounded-xl bg-dark-950 focus:outline-none focus:ring-2 focus:ring-primary/50"
+
+          >
+
+        </div>
+
+        <div class="flex items-center justify-end">
+
+          <button type="submit" class="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl shadow-lg shadow-blue-600/25 hover:shadow-blue-600/40 hover:-translate-y-0.5 transition-all duration-200">
+
+            <i data-lucide="upload" class="w-5 h-5"></i>
+
+            Cargar reporte
+
+          </button>
+
+        </div>
+
+      </form>
+
+    </section>
+
+
+
+    {% if result %}
+
+        <div id="server-results">
+
+            {% include "partials/results_block.html" ignore missing %}
+
+             <section class="bg-dark-900 border border-dark-800 rounded-2xl p-6 shadow-xl animate-slide-up mt-6">
+
+                 <div class="flex items-center gap-3 mb-4">
+
+                    <i data-lucide="file-text" class="w-6 h-6 text-purple-400"></i>
+
+                    <h2 class="text-xl font-bold">Reporte Importado</h2>
+
+                 </div>
+
+                 <div class="bg-dark-900 border border-dark-700 rounded-xl p-5 max-h-[500px] overflow-auto">
+
+                    <pre class="text-sm leading-relaxed text-gray-300 whitespace-pre-wrap">{{ result.analysis }}</pre>
+
+                 </div>
+
+                 {% if export_json %}
+
+                 <textarea id="export-json-server" class="hidden">{{ export_json }}</textarea>
+
+                 <button onclick="downloadReport('export-json-server')" class="mt-4 px-4 py-2 bg-primary text-black font-bold rounded">Descargar JSON</button>
+
+                 {% endif %}
+
+             </section>
+
+             </div>
+
+    {% endif %}
+
+
+
+    <div id="live-results-container" class="hidden space-y-6">
+
+        </div>
+
+
+
+  </main>
+
+
+
+  <footer class="border-t border-dark-800 mt-12">
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+      <p class="text-center text-sm text-gray-500">
+
+        <i data-lucide="shield" class="w-4 h-4 inline mr-1"></i>
+
+        Nmap + Ollama Dashboard | Uso responsable y autorizado únicamente
+
+      </p>
+
+    </div>
+
+  </footer>
+
+
+
+  <script>
+
+    // Inicializar iconos
+
+    lucide.createIcons();
+
+
+
+    async function startScan(event) {
+
+        event.preventDefault();
+
+       
+
+        // Elementos DOM
+
+        const form = document.getElementById('scan-form');
+
+        const btnScan = document.getElementById('btn-scan');
+
+        const progressSection = document.getElementById('progress-section');
+
+        const progressBar = document.getElementById('progress-bar');
+
+        const progressPercent = document.getElementById('progress-percent');
+
+        const progressStatus = document.getElementById('progress-status');
+
+        const liveResults = document.getElementById('live-results-container');
+
+        const errorSection = document.getElementById('error-section');
+
+        const serverResults = document.getElementById('server-results');
+
+
+
+        // Valores del formulario
+
+        const target = document.getElementById('target').value;
+
+        const profile = document.getElementById('profile').value;
+
+        const noPing = document.getElementById('no_ping').checked;
+
+        const osDetect = document.getElementById('os_detect').checked;
+
+        const vulnScripts = document.getElementById('vuln_scripts').checked;
+
+
+
+        // Reset UI
+
+        if(serverResults) serverResults.style.display = 'none'; // Ocultar resultados importados previos
+
+        liveResults.innerHTML = '';
+
+        liveResults.classList.add('hidden');
+
+        errorSection.classList.add('hidden');
+
+        progressSection.classList.remove('hidden');
+
+       
+
+        btnScan.disabled = true;
+
+        btnScan.classList.add('opacity-50');
+
+       
+
+        progressBar.style.width = '0%';
+
+        progressPercent.innerText = '0%';
+
+        progressStatus.innerText = 'Conectando Socket...';
+
+
+
+        // WebSocket
+
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+
+        const ws = new WebSocket(`${protocol}://${window.location.host}/ws/scan`);
+
+
+
+        ws.onopen = () => {
+
+            progressStatus.innerText = 'Enviando configuración...';
+
+            ws.send(JSON.stringify({
+
+                target: target,
+
+                profile: profile,
+
+                no_ping: noPing,
+
+                os_detect: osDetect,
+
+                vuln_scripts: vulnScripts
+
+            }));
+
+        };
+
+
+
+        ws.onmessage = (event) => {
+
+            const data = JSON.parse(event.data);
+
+
+
+            if (data.status === 'progress') {
+
+                const percent = data.percent + '%';
+
+                progressBar.style.width = percent;
+
+                progressPercent.innerText = percent;
+
+                progressStatus.innerText = data.message;
+
+            }
+
+            else if (data.status === 'complete') {
+
+                progressBar.style.width = '100%';
+
+                progressPercent.innerText = '100%';
+
+                progressStatus.innerText = '¡Análisis Completado!';
+
+               
+
+                setTimeout(() => {
+
+                    progressSection.classList.add('hidden');
+
+                    btnScan.disabled = false;
+
+                    btnScan.classList.remove('opacity-50');
+
+                    renderLiveResults(data.data, data.export_json);
+
+                }, 1000); // Pequeña pausa para ver el 100%
+
+               
+
+                ws.close();
+
+            }
+
+            else if (data.status === 'error') {
+
+                progressSection.classList.add('hidden');
+
+                errorSection.classList.remove('hidden');
+
+                document.getElementById('error-message').innerText = data.message;
+
+                btnScan.disabled = false;
+
+                btnScan.classList.remove('opacity-50');
+
+                ws.close();
+
+            }
+
+        };
+
+
+
+        ws.onerror = (err) => {
+
+            progressSection.classList.add('hidden');
+
+            errorSection.classList.remove('hidden');
+
+            document.getElementById('error-message').innerText = "Error de conexión con el WebSocket.";
+
+            btnScan.disabled = false;
+
+            btnScan.classList.remove('opacity-50');
+
+        };
+
+    }
+
+
+
+    // Función para generar el HTML dinámicamente (reemplaza a Jinja en el cliente)
+
+    function renderLiveResults(data, exportJson) {
+
+        const container = document.getElementById('live-results-container');
+
+        const scan = data.scan;
+
+        const meta = data.meta;
+
+       
+
+        // Calcular porcentaje ahorrado
+
+        const savedPercent = data.token_stats.saved_percent;
+
+        const toonTokens = data.token_stats.toon_tokens;
+
+        const jsonTokens = data.token_stats.json_tokens;
+
+        const toonWidth = jsonTokens > 0 ? Math.round((toonTokens / jsonTokens) * 100) : 0;
+
+
+
+        let hostsHtml = '';
+
+        scan.hosts.forEach(host => {
+
+            let portsHtml = '';
+
+            host.ports.forEach(p => {
+
+                portsHtml += `
+
+                    <tr class="border-b border-dark-800 hover:bg-dark-900 transition-colors">
+
+                      <td class="py-3 px-3 font-mono text-primary">${p.port}</td>
+
+                      <td class="py-3 px-3 font-mono">${p.proto}</td>
+
+                      <td class="py-3 px-3">${p.service || '-'}</td>
+
+                      <td class="py-3 px-3 text-gray-400">${p.product || '-'}</td>
+
+                      <td class="py-3 px-3 text-gray-400">${p.version || '-'}</td>
+
+                    </tr>
+
+                `;
+
+            });
+
+
+
+            hostsHtml += `
+
+              <article class="bg-dark-900 border border-dark-700 rounded-xl p-5 hover:border-primary/30 transition-all mb-4">
+
+                <header class="flex items-center justify-between mb-4">
+
+                  <div class="flex items-center gap-3">
+
+                    <div class="p-2 bg-primary/10 rounded-lg">
+
+                      <i data-lucide="network" class="w-5 h-5 text-primary"></i>
+
+                    </div>
+
+                    <div>
+
+                      <h3 class="text-xl font-bold">${host.ip}</h3>
+
+                      ${host.hostname ? `<p class="text-sm text-gray-400">${host.hostname}</p>` : ''}
+
+                    </div>
+
+                  </div>
+
+                  <span class="px-3 py-1 bg-emerald-950/30 text-emerald-400 text-xs font-semibold rounded-full border border-emerald-800/30">
+
+                    ${host.ports.length} puertos
+
+                  </span>
+
+                </header>
+
+                <div class="overflow-x-auto">
+
+                  <table class="w-full text-sm">
+
+                    <thead>
+
+                      <tr class="border-b border-dark-700">
+
+                        <th class="text-left py-3 px-3 text-gray-400 font-medium">Puerto</th>
+
+                        <th class="text-left py-3 px-3 text-gray-400 font-medium">Protocolo</th>
+
+                        <th class="text-left py-3 px-3 text-gray-400 font-medium">Servicio</th>
+
+                        <th class="text-left py-3 px-3 text-gray-400 font-medium">Producto</th>
+
+                        <th class="text-left py-3 px-3 text-gray-400 font-medium">Versión</th>
+
+                      </tr>
+
+                    </thead>
+
+                    <tbody>${portsHtml}</tbody>
+
+                  </table>
+
+                </div>
+
+              </article>
+
+            `;
+
+        });
+
+
+
+        const html = `
+
+            <section class="bg-dark-900 border border-dark-800 rounded-2xl p-6 shadow-xl animate-slide-up">
+
+              <div class="flex items-center gap-3 mb-4">
+
+                <i data-lucide="file-text" class="w-6 h-6 text-purple-400"></i>
+
+                <h2 class="text-xl font-bold">Contexto del reporte</h2>
+
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+
+                 <div class="bg-dark-950 rounded-xl p-4 border border-dark-700">
+
+                   <p class="text-xs text-gray-500 mb-1">Objetivo</p>
+
+                   <p class="font-semibold text-lg">${meta.target}</p>
+
+                 </div>
+
+                 <div class="bg-dark-900 rounded-xl p-4 border border-dark-700">
+
+                   <p class="text-xs text-gray-500 mb-1">Herramienta</p>
+
+                   <p class="font-semibold text-lg">Nmap + Ollama</p>
+
+                 </div>
+
+                 <div class="bg-dark-900 rounded-xl p-4 border border-dark-700">
+
+                   <p class="text-xs text-gray-500 mb-1">Fecha</p>
+
+                   <p class="font-semibold text-sm">${meta.generated_at}</p>
+
+                 </div>
+
+              </div>
+
+            </section>
+
+
+
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+                <section class="lg:col-span-3 bg-dark-900 border border-dark-800 rounded-2xl p-6 shadow-xl animate-slide-up">
+
+                    <div class="flex items-center justify-between mb-6">
+
+                        <div class="flex items-center gap-3">
+
+                            <i data-lucide="server" class="w-6 h-6 text-primary"></i>
+
+                            <h2 class="text-2xl font-bold">Resumen</h2>
+
+                        </div>
+
+                        <div class="px-4 py-2 bg-primary/10 text-primary rounded-lg border border-primary/20">
+
+                            <span class="text-2xl font-bold">${scan.summary.total_hosts}</span> hosts
+
+                        </div>
+
+                    </div>
+
+                    <div class="space-y-4">${hostsHtml}</div>
+
+                </section>
+
+
+
+                <section class="lg:col-span-2 bg-dark-900 border border-dark-800 rounded-2xl p-6 shadow-xl animate-slide-up">
+
+                     <div class="flex items-center gap-3 mb-4">
+
+                        <i data-lucide="terminal" class="w-6 h-6 text-emerald-400"></i>
+
+                        <h2 class="text-xl font-bold">Consola</h2>
+
+                     </div>
+
+                     <div class="bg-dark-900 border border-dark-700 rounded-xl p-4 h-[400px] overflow-auto">
+
+                        <pre class="text-xs font-mono text-emerald-400 leading-relaxed">${data.scan_log || 'Sin log disponible'}</pre>
+
+                     </div>
+
+                </section>
+
+            </div>
+
+
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <section class="lg:col-span-2 bg-dark-900 border border-dark-800 rounded-2xl p-6 shadow-xl animate-slide-up">
+
+                    <div class="flex items-center gap-3 mb-4">
+
+                        <i data-lucide="brain" class="w-6 h-6 text-purple-400"></i>
+
+                        <h2 class="text-xl font-bold">Análisis IA</h2>
+
+                    </div>
+
+                    <div class="bg-dark-900 border border-dark-700 rounded-xl p-5 max-h-[500px] overflow-auto">
+
+                        <pre class="text-sm leading-relaxed text-gray-300 whitespace-pre-wrap">${data.analysis}</pre>
+
+                    </div>
+
+                </section>
+
+
+
+                <section class="bg-dark-900 border border-dark-800 rounded-2xl p-6 shadow-xl animate-slide-up">
+
+                     <div class="flex items-center gap-3 mb-4">
+
+                        <i data-lucide="gauge" class="w-6 h-6 text-cyan-400"></i>
+
+                        <h2 class="text-xl font-bold">Tokens</h2>
+
+                     </div>
+
+                     <div class="space-y-4">
+
+                        <div class="bg-dark-900 border border-dark-700 rounded-xl p-4">
+
+                             <div class="flex justify-between mb-2"><span class="text-sm text-gray-400">JSON</span><span class="text-xl font-bold text-orange-400">${jsonTokens}</span></div>
+
+                             <div class="w-full bg-dark-800 rounded-full h-2"><div class="bg-orange-400 h-2 rounded-full" style="width: 100%"></div></div>
+
+                        </div>
+
+                        <div class="bg-dark-900 border border-dark-700 rounded-xl p-4">
+
+                             <div class="flex justify-between mb-2"><span class="text-sm text-gray-400">TOON</span><span class="text-xl font-bold text-blue-400">${toonTokens}</span></div>
+
+                             <div class="w-full bg-dark-800 rounded-full h-2"><div class="bg-blue-400 h-2 rounded-full" style="width: ${toonWidth}%"></div></div>
+
+                        </div>
+
+                        <div class="bg-gradient-to-br from-primary/10 to-emerald-500/10 border border-primary/30 rounded-xl p-4">
+
+                            <span class="text-sm font-medium text-primary">Ahorro total</span>
+
+                            <div class="flex items-baseline gap-2">
+
+                                <span class="text-3xl font-bold text-primary">${savedPercent}%</span>
+
+                            </div>
+
+                        </div>
+
+                     </div>
+
+                </section>
+
+            </div>
+
+
+
+            <section class="bg-dark-900 border border-dark-800 rounded-2xl p-6 shadow-xl animate-slide-up">
+
+                <div class="flex items-center gap-3 mb-4">
+
+                    <i data-lucide="download" class="w-6 h-6 text-primary"></i>
+
+                    <h2 class="text-xl font-bold">Exportar</h2>
+
+                </div>
+
+                <div class="flex items-center justify-between">
+
+                    <p class="text-sm text-gray-400">Descarga el reporte completo en JSON.</p>
+
+                    <textarea id="export-json-live" class="hidden">${exportJson}</textarea>
+
+                    <button onclick="downloadReport('export-json-live')" class="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary to-emerald-400 text-dark-950 font-semibold rounded-xl hover:shadow-primary/40 transition-all">
+
+                        <i data-lucide="download" class="w-5 h-5"></i> Descargar
+
+                    </button>
+
+                </div>
+
+            </section>
+
+        `;
+
+
+
+        container.innerHTML = html;
+
+        container.classList.remove('hidden');
+
+        lucide.createIcons(); // Refrescar iconos en el nuevo contenido
+
+    }
+
+
+
+    // Función de descarga genérica
+
+    function downloadReport(elementId) {
+
+      const textArea = document.getElementById(elementId);
+
+      if(!textArea) return;
+
+     
+
+      const data = textArea.value;
+
+      const blob = new Blob([data], { type: "application/json" });
+
+     
+
+      let filename = "nmap_ollama_reporte.json";
+
+      try {
+
+        const parsed = JSON.parse(data);
+
+        const t = (parsed.meta && parsed.meta.target) ? parsed.meta.target : "scan";
+
+        filename = "nmap_ollama_" + t.replace(/[^a-zA-Z0-9._-]/g, "_") + ".json";
+
+      } catch(e) {}
+
+
+
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+
+      a.href = url;
+
+      a.download = filename;
+
+      document.body.appendChild(a);
+
+      a.click();
+
+      URL.revokeObjectURL(url);
+
+      a.remove();
+
+    }
+
+  </script>
+
+</body>
+
+</html>
